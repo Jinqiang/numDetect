@@ -9,7 +9,7 @@
 
 houseNumDetector::houseNumDetector() {
 	// TODO Auto-generated constructor stub
-
+	_displayFlag = 1;  // enable to for debug
 }
 
 houseNumDetector::~houseNumDetector() {
@@ -90,7 +90,7 @@ Point houseNumDetector::MatchingMethod( Mat& img, int& match_method, Mat& result
 			matchTemplate( img, templ[i][k], result[i][k], match_method );
 
 			minMaxLoc( result[i][k], &minVal[i][k], &maxVal[i][k], &minLoc[i][k], &maxLoc[i][k], Mat() );
-//			scaleFactor = scaleFactor + ScalStep;
+			//			scaleFactor = scaleFactor + ScalStep;
 		}
 	}
 
@@ -158,28 +158,27 @@ void houseNumDetector::thresholdImage(Mat img_gray, Mat& output)
 	//        imshow("equalized histograme image", histoEqualizedImage); waitKey(0);
 
 	// 1 hard threshold;Not Used
-//		int thresh      = 150; //image intensity threshold
-//		threshold(img_gray,output,thresh,255,CV_THRESH_BINARY);
-	//	imshow(" Current Image threshold",img_thres);
-//	/// 2 adaptive threshold
-	Mat adThresholdOutput;
-	adaptiveThreshold(img_gray,adThresholdOutput,255,
-			CV_ADAPTIVE_THRESH_MEAN_C,
-			CV_THRESH_BINARY,
-			75,
-			10);
-//	//  imshow(" Adaptive thresholding image",adThresholdOutput);     waitKey(0);
-//	/// 3 binary thresholding using OTSU method
-	Mat img_thrOTSU;
-	threshold(img_gray, img_thrOTSU, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-	//  imshow("image thresh OTSU", img_thrOTSU); waitKey(0);
+	int thresh      = 50; //image intensity threshold
+	threshold(img_gray,output,thresh,255,CV_THRESH_BINARY);
 
-	// OR operation of the above two thresholding method.
-	 Mat orImage;
-	max(img_thrOTSU, adThresholdOutput, output);
-
-	// imshow("OR image operation", output); waitKey(0);
-	// output = img_thrOTSU;
+	/// 2 adaptive threshold
+//	Mat adThresholdOutput;
+//	adaptiveThreshold(img_gray,adThresholdOutput,255,
+//			CV_ADAPTIVE_THRESH_MEAN_C,
+//			CV_THRESH_BINARY,
+//			75,
+//			10);
+//	//	//  imshow(" Adaptive thresholding image",adThresholdOutput);     waitKey(0);
+//	//	/// 3 binary thresholding using OTSU method
+//	Mat img_thrOTSU;
+//	threshold(img_gray, img_thrOTSU, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+//	//  imshow("image thresh OTSU", img_thrOTSU); waitKey(0);
+//
+//	// OR operation of the above two thresholding method.
+//	Mat orImage;
+//	max(img_thrOTSU, adThresholdOutput, output);
+//
+//	imshow(" Current Image threshold",output);  waitKey(1);
 }
 
 void houseNumDetector::getBinaryImage(Mat img_gray, Mat& Output)
@@ -190,7 +189,7 @@ void houseNumDetector::getBinaryImage(Mat img_gray, Mat& Output)
 	//	pyrDown(img_gray, pyr, Size(SrcImage.cols/2, SrcImage.rows/2));
 	//	pyrUp(pyr, timg, img_gray.size());
 	//	imshow(" pyro  blur Image ",timg);
-    // 2. blur
+	// 2. blur
 	// blur(img_gray, img_gray, Size(5,5));
 	GaussianBlur(img_gray,img_gray,Size(3,3),0);
 	// imshow(" Gaussian blur Image ",img_gray);     waitKey(0);
@@ -198,21 +197,22 @@ void houseNumDetector::getBinaryImage(Mat img_gray, Mat& Output)
 	Mat img_threshold= Mat::zeros(img_gray.size(), img_gray.type());
 
 	/// threshold type 1,2,3
-	thresholdImage( img_gray, img_threshold);
+	// thresholdImage( img_gray, img_threshold);
 
 	/// threshold type 4, OTSU in multiple ROIs
-	 //thresholdImageInROIs(img_gray, img_threshold);
+	thresholdImageInROIs(img_gray, img_threshold);
 
 	// morphological operation
-	Mat dst;
-	Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
-	morphologyEx(img_threshold, img_threshold, CV_MOP_OPEN, element);
+//	Mat dst;
+//	Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
+//	morphologyEx(img_threshold, img_threshold, CV_MOP_OPEN, element);
+//	morphologyEx(img_threshold, img_threshold, CV_MOP_CLOSE, element);
 
 	//  morphologyEx(dst, dst, CV_MOP_OPEN, element);
 
 	/// biwise_not to avoid contouring on the edge of image
 	bitwise_not(img_threshold, Output);
-//	imshow("Binary image" , Output); waitKey(1);
+	//	imshow("Binary image" , Output); waitKey(1);
 }
 
 void houseNumDetector::removeContourWithLargerAngle(Mat inputToContourSelection)
@@ -239,7 +239,7 @@ void houseNumDetector::removeContourWithLargerAngle(Mat inputToContourSelection)
 
 void houseNumDetector::thresholdImageInROIs(Mat img_gray, Mat& output)
 {
-	int N = 300;
+	int N = 50;
 	for (int r = 0; r < img_gray.rows; r += N/2)
 		for (int c = 0; c < img_gray.cols; c += N/2)
 		{
@@ -278,39 +278,39 @@ void houseNumDetector::imageContourThresholdingHierarchy(Mat& inputOutput)
 	//cv::findContours(input, contours,  CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 	findContours( input, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
-	// displayContours(input, contours);
+	displayContours(input, contours);
 	Mat drawing = Mat::zeros(input.size(), CV_8UC3);
 
 	double epsilon = 5 ; // 5 pixel accuracy for approxPolyDP(Mat(contours[i]),contourDP[i], epsilon, true);
 	for (int i = 0; i < contours.size(); i++) {
 		Rect bRect;
 		bRect   = boundingRect(Mat(contours[i]) );
-		//		// #ifdef DEBUGff
-		//		//		cout << endl << i <<  " in "  << contours.size() << endl;
-		//		//		cout << "hierarchy idx: " << hierarchy[i] << endl;
-		//		//		cout << contours[i]<< endl;
-		//		RotatedRect minRect;
-		//		minRect = minAreaRect( Mat(contours[i]) );
-		//		cout <<"angle of rect" << minRect.angle << endl;
-		//
-		//		Point2f rect_points[4]; minRect.points( rect_points );
-		//		cout << "rotate vertices " << rect_points[0] << endl;
-		//		rectangle( drawing, Point(bRect.x, bRect.y), Point(bRect.x + bRect.width, bRect.y + bRect.height),Scalar( 0, 0, 255 ));
-		//		for( int j = 0; j < 4; j++ ){
-		//			//cout<< rect_points[j] << endl;
-		//			line( drawing, rect_points[j], rect_points[(j+1)%4], Scalar(0,255,0), 1, 8 );
-		//		}
-		//
-		//		//|| !checkContourAspectRatio(contours[i])
-		//		vector<Point> contourDP;
-		//		approxPolyDP(Mat(contours[i]),contourDP, epsilon, true);
-		//
-		//		cout << "isContourConvex " << isContourConvex(contours[i]) << "  DP "<<  isContourConvex(contourDP) << endl;
-		//		cout << "countour area  " << (contourArea(contours[i]) < 100) << endl;
-		//		cout << "countour size  " << (contours[i].size()< 5 )<< endl;
-		//		cout << "conour on border " << checkContourCloseBorder(input, bRect) << endl;
-		//		cout << "check contour aspect ratio  " << (!checkContourAspectRatio(contours[i])) << endl;
-		//  #endif
+		if(_displayFlag)
+		{
+			cout << endl << i <<  " in "  << contours.size() << endl;
+			cout << "hierarchy idx: " << hierarchy[i] << endl;
+			cout << contours[i]<< endl;
+			RotatedRect minRect;
+			minRect = minAreaRect( Mat(contours[i]) );
+			cout <<"angle of rect" << minRect.angle << endl;
+
+			Point2f rect_points[4]; minRect.points( rect_points );
+			cout << "rotate vertices " << rect_points[0] << endl;
+			rectangle( drawing, Point(bRect.x, bRect.y), Point(bRect.x + bRect.width, bRect.y + bRect.height),Scalar( 0, 0, 255 ));
+			for( int j = 0; j < 4; j++ ){
+				//cout<< rect_points[j] << endl;
+				line( drawing, rect_points[j], rect_points[(j+1)%4], Scalar(0,255,0), 1, 8 );
+			}
+
+			vector<Point> contourDP;
+			approxPolyDP(Mat(contours[i]),contourDP, epsilon, true);
+
+			cout << "isContourConvex " << isContourConvex(contours[i]) << "  DP "<<  isContourConvex(contourDP) << endl;
+			cout << "countour area  " << (contourArea(contours[i]) < 100) << endl;
+			cout << "countour size  " << (contours[i].size()< 5 )<< endl;
+			cout << "conour on border " << checkContourCloseBorder(input, bRect) << endl;
+			cout << "check contour aspect ratio  " << (!checkContourAspectRatio(contours[i])) << endl;
+		}
 
 		if (       fabs(contourArea(contours[i])) < 100  // check area
 				|| fabs(contourArea(contours[i])) > inputOutput.rows * inputOutput.cols * 0.25
@@ -323,9 +323,76 @@ void houseNumDetector::imageContourThresholdingHierarchy(Mat& inputOutput)
 					Scalar::all(0),
 					CV_FILLED);
 		}
-		//		imshow(" Thresholded Image",inputOutput); //waitKey(0);
-		//		imshow("Contour drawing filtered", drawing);
+		if(_displayFlag)
+		{
+			imshow("Contour drawing filtered", drawing);waitKey(0);
+			imshow(" Thresholded Image",inputOutput); waitKey(0);
+		}
+
 	}
+}
+
+// This function take in a Gray Scale image finds Contours of the Image.
+// Loops through all the contours and only draws contours bellow a specified area size.
+void houseNumDetector::imageContourThresholdROI(Mat& inputOutput, vector<Rect>& potentialROIs, vector<vector<Point> >& contourOutput)
+{
+	vector<vector<Point> > contours;
+//	vector<Vec4i> hierarchy;
+	Mat input = inputOutput.clone();
+	//cv::findContours(input, contours,  CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+	findContours( input, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+
+	// displayContours(input, contours);
+	Mat drawing = Mat::zeros(input.size(), CV_8UC3);
+
+	double epsilon = 5 ; // 5 pixel accuracy for approxPolyDP(Mat(contours[i]),contourDP[i], epsilon, true);
+	for (int i = 0; i < contours.size(); i++) {
+		Rect bRect;
+		bRect   = boundingRect(Mat(contours[i]) );
+		if(_displayFlag)
+		{
+			cout << endl << i <<  " in "  << contours.size() << endl;
+			RotatedRect minRect;
+			minRect = minAreaRect( Mat(contours[i]) );
+			Point2f rect_points[4]; minRect.points( rect_points );
+			rectangle( drawing, Point(bRect.x, bRect.y), Point(bRect.x + bRect.width, bRect.y + bRect.height),Scalar( 0, 0, 255 ));
+			for( int j = 0; j < 4; j++ ){
+				line( drawing, rect_points[j], rect_points[(j+1)%4], Scalar(0,255,0), 1, 8 );
+			}
+
+			vector<Point> contourDP;
+			approxPolyDP(Mat(contours[i]),contourDP, epsilon, true);
+
+			cout << "isContourConvex " << isContourConvex(contours[i]) << "  DP "<<  isContourConvex(contourDP) << endl;
+			cout << "countour area  " << (contourArea(contours[i]) < 100) << endl;
+			cout << "countour size  " << (contours[i].size() < 5 )<< endl;
+			cout << "conour on border " << checkContourCloseBorder(input, bRect) << endl;
+			cout << "check contour aspect ratio  " << (!checkContourAspectRatio(contours[i])) << endl;
+		} // endif
+
+		if (       fabs(contourArea(contours[i])) < 100  // check area
+				|| fabs(contourArea(contours[i])) > inputOutput.rows * inputOutput.cols * 0.25
+				|| contours[i].size()    < 5   // check point size
+				|| checkContourCloseBorder(input, bRect) // check if in border
+				|| !checkContourAspectRatio(contours[i])) // check if in aspect ratio
+		{
+//			cv::drawContours(inputOutput,
+//					contours, i, //Scalar(255,255,0),
+//					Scalar::all(0),
+//					CV_FILLED);
+			cout << "contour removed" << endl;
+		}
+		else{
+			potentialROIs.push_back(bRect);
+			contourOutput.push_back(contours[i]);
+		} // endif
+		if(_displayFlag&0)
+		{
+			imshow("Contour drawing filtered", drawing);waitKey(0);
+			imshow(" Thresholded Image",inputOutput); waitKey(0);
+		}// endif
+	} //endfor
+	// displayContours(input, contourOutput);
 }
 
 // This function take RGB image.Then convert it into HSV for easy colour detection
@@ -522,7 +589,11 @@ void houseNumDetector::displayContours(Mat SmallContoursRemoved, vector< vector<
 			line( drawing, rect_points[j], rect_points[(j+1)%4], Scalar(0,255,0), 1, 8 );
 		}
 	}
-	// imshow("Drawing of contour 2", drawing); waitKey(1);
+	if(_displayFlag)
+	{
+		imshow("Drawing of contour", drawing); waitKey(0);
+	}
+
 }
 
 
@@ -552,27 +623,28 @@ bool houseNumDetector::checkContourCloseBorder(Mat img, Rect bRect)
 void houseNumDetector::run_main(Mat& SrcImage, int& houseNumber, bool& flag)
 {
 	resize(SrcImage, SrcImage, Size(640,480));
-	//		imshow("Original  Image", SrcImage); //waitKey(0);
+//	imshow("Original  Image", SrcImage); //waitKey(0);
 
 	/// Detect edges using Threshold
 	Mat img_gray;
 	cvtColor(SrcImage,img_gray,CV_RGB2GRAY);
-
-	Mat inputToContourSelection;
-	getBinaryImage(img_gray, inputToContourSelection);
+	imshow("Gray  Image", img_gray); waitKey(1);
+	Mat BinaryImage;
+	getBinaryImage(img_gray, BinaryImage);
+	imshow("Binary Image 1", BinaryImage); waitKey(1);
 
 	/// apply thresholding to the contours
-	imageContourThresholdingHierarchy(inputToContourSelection);
-	// imshow(" Output Image ",inputToContourSelection);
-
-	Mat input = inputToContourSelection.clone();
 	vector< Rect > potentialROIs;
 	vector<vector<Point> > contourOutput;
-	getContourROI( input, potentialROIs, contourOutput);
+	imageContourThresholdROI(BinaryImage, potentialROIs,contourOutput);
+	//	imageContourThresholdingHierarchy(inputToContourSelection);
+	// imshow(" Output Image ",inputToContourSelection);
+
+//	getContourROI( input, potentialROIs, contourOutput);
 
 	/// not operation back for template matching
-	bitwise_not(inputToContourSelection,inputToContourSelection);
-	// imshow("Input image for temp Matching", inputToContourSelection); waitKey(1);
+	bitwise_not(BinaryImage,BinaryImage);
+  //  imshow("Input image for temp Matching", BinaryImage); waitKey(0);
 
 	/// run template matching for all ROIs in the list
 	Mat img_raw, result, img_display, reresult, reimg_display;
@@ -589,8 +661,11 @@ void houseNumDetector::run_main(Mat& SrcImage, int& houseNumber, bool& flag)
 		{
 			//cout << " ROI number --- " << i << endl;
 			Mat img;
-			Mat(inputToContourSelection, potentialROIs[i]).copyTo(img);
-
+			Mat(BinaryImage, potentialROIs[i]).copyTo(img);
+			Mat img_thrOTSU;
+			threshold(Mat(img_gray, potentialROIs[i]), img_thrOTSU, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+			imshow("initial input", img);
+			imshow("otsu input" , img_thrOTSU);  waitKey(0);
 			int PatchNum     = 0;
 			int Digitclass   = 0;
 			Point MatchLoc = MatchingMethod( img, match_method, result, img_display, PatchNum, Digitclass, matchVal, potentialROIs[i]);
@@ -635,7 +710,7 @@ void houseNumDetector::run_main(Mat& SrcImage, int& houseNumber, bool& flag)
 			for( int j = 0; j < 4; j++ ){
 				line( SrcImage, rect_points[j], rect_points[(j+1)%4], Scalar(0,255,0), 1, 8 );
 			}
-			imshow("input ROI", Mat(inputToContourSelection, potentialROIs[index]).clone());
+			imshow("input ROI", Mat(BinaryImage, potentialROIs[index]).clone());
 			cout << " input ROI " << potentialROIs[index].width << endl;
 			houseNumber = digitList[index];
 			flag = 1;
@@ -656,7 +731,7 @@ void houseNumDetector::run_main(Mat& SrcImage, int& houseNumber, bool& flag)
 		putText( SrcImage, str, Point(10,30), FONT_HERSHEY_DUPLEX, 0.7,
 				Scalar(255, 255), 0.5, 8 );
 	}
-//		resize(SrcImage, SrcImage, Size(), 0.5, 0.5, INTER_LINEAR);
+	//		resize(SrcImage, SrcImage, Size(), 0.5, 0.5, INTER_LINEAR);
 	imshow("Source with number" , SrcImage);
 }
 
@@ -718,8 +793,8 @@ void houseNumDetector::extractBinaryTemplate()
 		cout << "image size" << templ_raw.size() << endl;
 		sprintf(file, "%s/%d.jpg", pathToSmallTempl, i);
 		imwrite(file, ROI );
-//		sprintf(file, "%s/%d.jpg", pathToSmallTempl, i+10);
-//		imwrite(file, binaryImage );
+		//		sprintf(file, "%s/%d.jpg", pathToSmallTempl, i+10);
+		//		imwrite(file, binaryImage );
 		imshow("template binaryImage", binaryImage);
 		imshow("template binaryImage", ROI); waitKey(0);
 	}
@@ -729,12 +804,12 @@ void houseNumDetector::saveImageToLocal(Mat input, int ID)
 {
 	char file[255];
 	char pathToImage[] = "InputImage";									// Here the image returns a 3-channel color image
-		if (!input.data)
-		{
-			cout << "Image is empty " << endl;
-			return;
-		}
-		sprintf(file, "%s/%d.jpg", pathToImage, ID);
-		imwrite(file, input );
-		imshow("template read", input); waitKey(1);
+	if (input.empty())
+	{
+		cout << "Image is empty " << endl;
+		return;
+	}
+	sprintf(file, "%s/%d.jpg", pathToImage, ID);
+	imwrite(file, input );
+	imshow("template read", input); waitKey(1);
 }

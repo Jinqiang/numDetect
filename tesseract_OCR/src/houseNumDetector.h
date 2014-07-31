@@ -27,11 +27,14 @@ using namespace cv;
 using namespace std;
 
 const char pathToImages[] = "digit_houseNumber/";
-const char pathToTempl[] = "Training_housenumber_Crop";//"Training_housenumber";//"//
+const char pathToTempl[] = "Training_housenumber_Binary";//"Training_housenumber";//"//
 const size_t TempNum = 10;
 const size_t ScalNum = 1;
 
 class houseNumDetector {
+private:
+	bool _displayFlag;
+
 public:
 	houseNumDetector();
 	virtual ~houseNumDetector();
@@ -47,6 +50,8 @@ public:
 	void getBinaryImage(Mat img_gray, Mat& Output);
 	void thresholdImageInROIs(Mat img_gray, Mat& output);
 	void imageContourThresholdingHierarchy(Mat& inputOutput);
+	void imageContourThresholdROI(Mat& inputOutput, vector<Rect>& potentialROIs, vector<vector<Point> >& contours);
+
 	bool checkContourAspectRatio(vector<Point> contours);
 	bool checkContourCloseBorder(Mat img, Rect bRect);
 	void removeContourWithLargerAngle(Mat inputToContourSelection);

@@ -55,6 +55,8 @@ public:
 	int GetlargestContour(vector<vector<Point> > contours);
 	void getContourROI(Mat input, vector< Rect >& potentialROIs, vector<vector<Point> >& contourOutput);
 	void getContourROI(Mat input, vector< Rect >& potentialROIs);
+	void extractBinaryTemplate();
+	void minizeTemplate();
 	/*
 	const char* Tesseractlanguage = "eng"; // initialize Tesseract with english language training data
 	const char* TesseractCharWhitelist = "tessedit_char_whitelist"; // limit tesseract to recognize only the wanted characters

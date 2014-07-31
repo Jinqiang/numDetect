@@ -186,22 +186,22 @@ void houseNumDetector::getBinaryImage(Mat img_gray, Mat& Output)
 {
 	/// remove noise
 	// 1. pyromid
-//	Mat pyr, timg;
-//	pyrDown(img_gray, pyr, Size(SrcImage.cols/2, SrcImage.rows/2));
-//	pyrUp(pyr, timg, img_gray.size());
-//	imshow(" pyro  blur Image ",timg);
+	//  Mat pyr, timg;
+	//	pyrDown(img_gray, pyr, Size(SrcImage.cols/2, SrcImage.rows/2));
+	//	pyrUp(pyr, timg, img_gray.size());
+	//	imshow(" pyro  blur Image ",timg);
     // 2. blur
-	//blur(img_gray, img_gray, Size(5,5));
+	// blur(img_gray, img_gray, Size(5,5));
 	GaussianBlur(img_gray,img_gray,Size(3,3),0);
 	// imshow(" Gaussian blur Image ",img_gray);     waitKey(0);
 
 	Mat img_threshold= Mat::zeros(img_gray.size(), img_gray.type());
 
 	/// threshold type 1,2,3
-		thresholdImage( img_gray, img_threshold);
+	thresholdImage( img_gray, img_threshold);
 
 	/// threshold type 4, OTSU in multiple ROIs
-	// thresholdImageInROIs(img_gray, img_threshold);
+	 //thresholdImageInROIs(img_gray, img_threshold);
 
 	// morphological operation
 	Mat dst;
@@ -212,7 +212,7 @@ void houseNumDetector::getBinaryImage(Mat img_gray, Mat& Output)
 
 	/// biwise_not to avoid contouring on the edge of image
 	bitwise_not(img_threshold, Output);
-	imshow("Binary image" , Output); waitKey(1);
+//	imshow("Binary image" , Output); waitKey(1);
 }
 
 void houseNumDetector::removeContourWithLargerAngle(Mat inputToContourSelection)
@@ -555,8 +555,9 @@ void houseNumDetector::run_main(Mat& SrcImage, int& houseNumber, bool& flag)
 	//		imshow("Original  Image", SrcImage); //waitKey(0);
 
 	/// Detect edges using Threshold
-	Mat img_gray;;
+	Mat img_gray;
 	cvtColor(SrcImage,img_gray,CV_RGB2GRAY);
+
 	Mat inputToContourSelection;
 	getBinaryImage(img_gray, inputToContourSelection);
 
@@ -564,7 +565,6 @@ void houseNumDetector::run_main(Mat& SrcImage, int& houseNumber, bool& flag)
 	imageContourThresholdingHierarchy(inputToContourSelection);
 	// imshow(" Output Image ",inputToContourSelection);
 
-	//
 	Mat input = inputToContourSelection.clone();
 	vector< Rect > potentialROIs;
 	vector<vector<Point> > contourOutput;
@@ -660,3 +660,67 @@ void houseNumDetector::run_main(Mat& SrcImage, int& houseNumber, bool& flag)
 	imshow("Source with number" , SrcImage);
 }
 
+
+void houseNumDetector::minizeTemplate()
+{
+	char file[255];
+	char pathToTempl[] = "Training_housenumber";
+	char pathToSmallTempl[] = "Training_housenumber_Crop";
+	for (int i = 0; i < 10; ++i)
+	{
+		// cout << " temp " << i << endl;
+		sprintf(file, "%s/%d.jpg", pathToTempl, i);
+		Mat templ_raw = imread(file, CV_LOAD_IMAGE_GRAYSCALE);										// Here the image returns a 3-channel color image
+		if (!templ_raw.data)
+		{
+			cout << "File " << file << " not found\n";
+			exit(1);
+		}
+		resize(templ_raw, templ_raw, Size(), 0.1, 0.1,  INTER_LINEAR);
+		cout << "image size" << templ_raw.size() << endl;
+		sprintf(file, "%s/%d.jpg", pathToSmallTempl, i);
+		imwrite(file, templ_raw );
+		imshow("template read", templ_raw); waitKey(0);
+	}
+}
+
+
+void houseNumDetector::extractBinaryTemplate()
+{
+	char file[255];
+	char pathToTempl[] = "Training_housenumber";
+	char pathToSmallTempl[] = "Training_housenumber_Binary";
+	for (int i = 0; i < 10; ++i)
+	{
+		// cout << " temp " << i << endl;
+		sprintf(file, "%s/%d.jpg", pathToTempl, i);
+		Mat templ_raw = imread(file, CV_LOAD_IMAGE_GRAYSCALE);										// Here the image returns a 3-channel color image
+		if (!templ_raw.data)
+		{
+			cout << "File " << file << " not found\n";
+			exit(1);
+		}
+		resize(templ_raw, templ_raw, Size(), 0.3, 0.3,  INTER_LINEAR);
+		Mat binaryImage;
+		threshold(templ_raw, binaryImage, 100,255, CV_THRESH_BINARY);
+		Mat binary_INV;
+		bitwise_not(binaryImage, binary_INV);
+		vector<vector<Point> > contours;
+		findContours( binary_INV, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE );
+		cout << "contour size"  << contours.size() << endl;
+		displayContours(binaryImage, contours);
+		Rect bRect;
+		bRect   = boundingRect(Mat(contours[0]) );
+		bRect -=Point(2,2);
+		bRect +=Size(4,4);
+		Mat ROI;
+		Mat(binaryImage, bRect).copyTo(ROI);
+		cout << "image size" << templ_raw.size() << endl;
+		sprintf(file, "%s/%d.jpg", pathToSmallTempl, i);
+		imwrite(file, ROI );
+//		sprintf(file, "%s/%d.jpg", pathToSmallTempl, i+10);
+//		imwrite(file, binaryImage );
+		imshow("template binaryImage", binaryImage);
+		imshow("template binaryImage", ROI); waitKey(0);
+	}
+}

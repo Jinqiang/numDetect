@@ -724,3 +724,17 @@ void houseNumDetector::extractBinaryTemplate()
 		imshow("template binaryImage", ROI); waitKey(0);
 	}
 }
+
+void houseNumDetector::saveImageToLocal(Mat input, int ID)
+{
+	char file[255];
+	char pathToImage[] = "InputImage";									// Here the image returns a 3-channel color image
+		if (!input.data)
+		{
+			cout << "Image is empty " << endl;
+			return;
+		}
+		sprintf(file, "%s/%d.jpg", pathToImage, ID);
+		imwrite(file, input );
+		imshow("template read", input); waitKey(1);
+}

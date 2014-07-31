@@ -57,6 +57,7 @@ public:
 	void getContourROI(Mat input, vector< Rect >& potentialROIs);
 	void extractBinaryTemplate();
 	void minizeTemplate();
+	void saveImageToLocal(Mat input, int ID);
 	/*
 	const char* Tesseractlanguage = "eng"; // initialize Tesseract with english language training data
 	const char* TesseractCharWhitelist = "tessedit_char_whitelist"; // limit tesseract to recognize only the wanted characters

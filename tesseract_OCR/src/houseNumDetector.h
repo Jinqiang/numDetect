@@ -63,6 +63,7 @@ public:
 	void extractBinaryTemplate();
 	void minizeTemplate();
 	void saveImageToLocal(Mat input, int ID);
+	Mat  showHistogram(const cv::Mat inImage);
 	/*
 	const char* Tesseractlanguage = "eng"; // initialize Tesseract with english language training data
 	const char* TesseractCharWhitelist = "tessedit_char_whitelist"; // limit tesseract to recognize only the wanted characters

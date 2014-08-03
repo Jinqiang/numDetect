@@ -158,7 +158,7 @@ void houseNumDetector::thresholdImage(Mat img_gray, Mat& output)
 	//        imshow("equalized histograme image", histoEqualizedImage); waitKey(0);
 
 	// 1 hard threshold;Not Used
-	int thresh      = 50; //image intensity threshold
+	int thresh      = 80; //image intensity threshold
 	threshold(img_gray,output,thresh,255,CV_THRESH_BINARY);
 
 	/// 2 adaptive threshold
@@ -194,13 +194,13 @@ void houseNumDetector::getBinaryImage(Mat img_gray, Mat& Output)
 	GaussianBlur(img_gray,img_gray,Size(3,3),0);
 	// imshow(" Gaussian blur Image ",img_gray);     waitKey(0);
 
-	Mat img_threshold= Mat::zeros(img_gray.size(), img_gray.type());
-
+	//Mat img_threshold= Mat::zeros(img_gray.size(), img_gray.type());
+	Mat img_threshold(img_gray.size(), img_gray.type(), Scalar::all(255));
 	/// threshold type 1,2,3
-	// thresholdImage( img_gray, img_threshold);
+	 thresholdImage( img_gray, img_threshold);
 
 	/// threshold type 4, OTSU in multiple ROIs
-	thresholdImageInROIs(img_gray, img_threshold);
+	// thresholdImageInROIs(img_gray, img_threshold);
 
 	// morphological operation
 //	Mat dst;
@@ -239,27 +239,30 @@ void houseNumDetector::removeContourWithLargerAngle(Mat inputToContourSelection)
 
 void houseNumDetector::thresholdImageInROIs(Mat img_gray, Mat& output)
 {
-	int N = 50;
-	for (int r = 0; r < img_gray.rows; r += N/2)
-		for (int c = 0; c < img_gray.cols; c += N/2)
+	int col_step = img_gray.cols/2;
+	int row_step = img_gray.rows/5;
+	cout << "col_Step"<< col_step << endl;
+	cout << "row_Step" << row_step << endl;
+	for (int r = 0; r < img_gray.rows; r += row_step)
+		for (int c = 0; c < img_gray.cols; c += col_step)
 		{
-			cv::Mat tile = img_gray(Range(r, MIN(r + N, img_gray.rows)),Range(c, MIN(c + N, img_gray.cols) ) ); //no data copying here
+			cv::Mat tile = img_gray(Range(r, MIN(r + row_step, img_gray.rows)),Range(c, MIN(c + col_step, img_gray.cols) ) ); //no data copying here
 			//cv::Mat tileCopy = img(cv::Range(r, min(r + N, img.rows)),
 			//cv::Range(c, min(c + N, img.cols))).clone();//with data copying
 			//			cout << "size " << tile.size();
 			//			imshow(" local Image ",tile);
 			Mat temp;
 			threshold(tile, temp, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-			//			imshow(" local Image binary",temp);
+			imshow(" local Image binary",temp); waitKey(1);
 			Rect bRect;
 			bRect.x = c;
 			bRect.y = r;
-			bRect.height = MIN(r + N, img_gray.rows) - r ;
-			bRect.width  = MIN(c + N, img_gray.cols) - c ;
-			output(bRect) = output(bRect)|temp;
+			bRect.height = MIN(r + row_step, img_gray.rows) - r ;
+			bRect.width  = MIN(c + col_step, img_gray.cols) - c ;
+			output(bRect) = output(bRect)&temp;
 			//				temp.copyTo(roi_thrOTSU(bRect));
 			// max(temp, roi_thrOTSU(bRect), roi_thrOTSU(bRect) );
-			// imshow(" global Image binary",output);     waitKey(1);
+			 imshow(" global Image binary",output);     waitKey(0);
 			//tile can be smaller than NxN if image size is not a factor of N
 		}
 
@@ -629,6 +632,8 @@ void houseNumDetector::run_main(Mat& SrcImage, int& houseNumber, bool& flag)
 	Mat img_gray;
 	cvtColor(SrcImage,img_gray,CV_RGB2GRAY);
 	imshow("Gray  Image", img_gray); waitKey(1);
+	Mat histImg = showHistogram(img_gray);
+	imshow(" Histogram of imgae", histImg);
 	Mat BinaryImage;
 	getBinaryImage(img_gray, BinaryImage);
 	imshow("Binary Image 1", BinaryImage); waitKey(1);
@@ -812,4 +817,58 @@ void houseNumDetector::saveImageToLocal(Mat input, int ID)
 	sprintf(file, "%s/%d.jpg", pathToImage, ID);
 	imwrite(file, input );
 	imshow("template read", input); waitKey(1);
+}
+
+/**
+ * This is similar to the implementation of Robert Laganière.
+ * See his book: OpenCV 2 Computer Vision Application Programming Cookbook.
+ */
+Mat  houseNumDetector::showHistogram(const cv::Mat inImage){
+
+    MatND hist;
+    // For a gray scale [0:255] we have 256 bins
+    const int bins[] = {256};
+    const float hranges[] = {0.0, 255.0};
+    const float* ranges[] = { hranges };
+    const int channels[] = {0};
+    // Prepare arguments for 1D histogram
+
+    calcHist(&inImage,
+            1,             // histogram from 1 image only
+            channels,
+            cv::Mat(),     // no mask is used
+            hist,            // the output histogram
+            1,             // 1D histogram
+            bins,
+            ranges        // pixel value ranges
+    );
+    // Get min and max bin values
+    double maxVal=0;
+    double minVal=0;
+    minMaxLoc(hist, &minVal, &maxVal, 0, 0);
+    // The image to display the histogram
+    Mat histImg(bins[0], bins[0], CV_8U, cv::Scalar(255));
+
+    // Map the highest point to 95% of the histogram height to leave some
+    // empty space at the top
+    const int histHeight = bins[0];
+    const int maxHeight = 0.95 * histHeight;
+
+    cv::Mat_<float>::iterator it    = hist.begin<float>();
+    cv::Mat_<float>::iterator itend = hist.end<float>();
+
+    int barPosition = 0;
+    for ( ; it != itend; ++it) {
+        float histValue = (*it);
+        int barHeight = ( histValue * maxHeight ) / maxVal;
+        cv::line(histImg,
+                // start the line from the bottom, and go up based on the barHeight
+                // Remember the (0,0) is the top left corner
+                cv::Point(barPosition, histHeight),
+                cv::Point(barPosition, histHeight - barHeight),
+                cv::Scalar::all(0));
+        barPosition++;
+    }
+
+    return histImg;
 }

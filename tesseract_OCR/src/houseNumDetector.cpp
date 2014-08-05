@@ -10,6 +10,7 @@
 houseNumDetector::houseNumDetector() {
 	// TODO Auto-generated constructor stub
 	_displayFlag = 1;  // enable to for debug
+	// test
 }
 
 houseNumDetector::~houseNumDetector() {

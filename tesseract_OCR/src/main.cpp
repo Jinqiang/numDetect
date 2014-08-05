@@ -15,16 +15,16 @@ using namespace std;
 int main(){
 
 	char file[255];
-	char pathToTest[] = "pointGreyImage";
+	//char pathToTest[] = "pointGreyImage";
 //	char pathToTest[] = "digit_houseNumber";
-	//char pathToTest[] = "jpg4";
+	char pathToTest[] = "jpg4";
 	//	extractBinaryTemplate();
 
 //	VideoCapture cap(1); // open the default camera
 //	if(!cap.isOpened())  // check if we succeeded
 //		return -1;
 
-	for(int imgID = 1; imgID < 4; ++imgID)
+	for(int imgID = 1101; imgID < 1140; ++imgID)
 //	while(1)
 	{
 		vector<vector<Point> > contours;
@@ -39,13 +39,17 @@ int main(){
 			continue;
 		}
 		//imshow("Original  Image", SrcImage); waitKey(1);
+//		Mat img_gray;
+//		cvtColor(SrcImage,img_gray,CV_RGB2GRAY);
+//		Mat histImg = showHistogram(img_gray);
+//		calculateStatistics(img_gray);
+//		imshow(" Histogram of imgae", histImg);
+
 		int houseNumber = 0;
 		bool flag = 0;
 		houseNumDetector myDetector;
-
-
-		 myDetector.run_main(SrcImage,houseNumber,flag);
-//		imshow("Histogram of image",  histImg) ; waitKey(1);
+		myDetector.run_main(SrcImage,houseNumber,flag);
+		imshow("Source with number" , SrcImage);
 		waitKey(0);
 		// if(waitKey(30) >= 0) break;
 		// cvDestroyAllWindows();
